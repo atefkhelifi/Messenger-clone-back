@@ -5,6 +5,7 @@ const cors = require("cors");
 
 //Routes
 const usersRoutes = require("./routes/user");
+const convarsationRoutes = require("./routes/conversation");
 const authJwt = require("./helpers/jwt");
 const errorHandler = require("./helpers/error-handler");
 require("dotenv/config");
@@ -21,6 +22,7 @@ app.use(errorHandler);
 
 const api = process.env.API_URL;
 app.use(`${api}/users`, usersRoutes);
+app.use(`${api}/conversations`, convarsationRoutes);
 
 mongoose
   .connect(process.env.CONNECTION_STRING, {
