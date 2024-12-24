@@ -36,12 +36,13 @@ router.post("/create", async (req, res) => {
     conversation.updatedAt = new Date();
     await conversation.save();
 
-    // Step 5: Respond with the conversation and message
+    // Step 6: Respond with the conversation and message
     res.status(201).json({ conversation, message });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 // Get a user's conversations and messages
 router.get("/my-conversations/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -75,7 +76,7 @@ router.get("/:conversationId", async (req, res) => {
   try {
     // Fetch messages by conversationId
     const messages = await Message.find({ conversationId })
-      .sort({ createdAt: 1 }) // Sort by creation date (oldest first)
+      .sort({ timestamp: 1 }) // Sort by creation date (oldest first)
       .exec();
 
     // If no messages are found
@@ -89,6 +90,30 @@ router.get("/:conversationId", async (req, res) => {
     res.status(200).json(messages);
   } catch (error) {
     console.error("Error fetching messages:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+// Get participants in discussion by conversationId
+router.get("/participants/:conversationId", async (req, res) => {
+  const { conversationId } = req.params;
+
+  try {
+    // Fetch conversation by ID
+    const conversation = await Conversation.findById(conversationId)
+      .populate("participants", "name email") // Populate user details
+      .exec();
+
+    // If no conversation is found
+    if (!conversation) {
+      return res
+        .status(404)
+        .json({ message: "No conversation found with this ID." });
+    }
+
+    // Respond with the participants
+    res.status(200).json(conversation.participants);
+  } catch (error) {
+    console.error("Error fetching participants:", error);
     res.status(500).json({ error: error.message });
   }
 });
