@@ -62,13 +62,30 @@ router.get("/my-conversations/:userId", async (req, res) => {
         .json({ message: "No conversations found for this user." });
     }
 
+    // Step 2: Reorder participants so the connected user is listed last
+    const reorderedConversations = conversations.map((conversation) => {
+      const reorderedParticipants = conversation.participants
+        .filter((participant) => participant._id.toString() !== userId) // Exclude the connected user
+        .concat(
+          conversation.participants.find(
+            (participant) => participant._id.toString() === userId
+          )
+        ); // Add the connected user last
+
+      return {
+        ...conversation.toObject(), // Convert the conversation to a plain object
+        participants: reorderedParticipants, // Assign reordered participants
+      };
+    });
+
     // Step 3: Respond with the data
-    res.status(200).json(conversations);
+    res.status(200).json(reorderedConversations);
   } catch (error) {
     console.error("Error fetching conversations:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
 // Get messages for a specific conversation
 router.get("/:conversationId", async (req, res) => {
   const { conversationId } = req.params;
@@ -93,6 +110,37 @@ router.get("/:conversationId", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+//Get a conversation by ID participants
+router.get("/conversation/:idUsers", async (req, res) => {
+  const { idUsers } = req.params;
+
+  const participants = idUsers.split(",");
+  console.log(participants);
+  try {
+    // Fetch conversation by ID
+    const conversation = await Conversation.find({
+      participants: { $all: [participants[0], participants[1]] },
+      $expr: { $eq: [{ $size: "$participants" }, 2] }, // Ensure exactly 2 participants
+    })
+      .populate("participants", "name email") // Populate user details (adjust fields as needed)
+      .populate("lastMessageId", "content senderId createdAt") // Populate last message details
+      .exec();
+
+    // If no conversation is found
+    if (!conversation) {
+      return res
+        .status(404)
+        .json({ message: "No conversation found with this ID." });
+    }
+
+    // Respond with the conversation
+    res.status(200).json(conversation);
+  } catch (error) {
+    console.error("Error fetching conversation:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get participants in discussion by conversationId
 router.get("/participants/:conversationId", async (req, res) => {
   const { conversationId } = req.params;

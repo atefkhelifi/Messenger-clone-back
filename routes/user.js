@@ -3,31 +3,28 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-//const server = http.createServer(app); // Pass the app to the HTTP server
-// const io = require("socket.io")(server, {
-//   cors: {
-//     origin: "*",
-//   },
-// });
-// io.on("connection", (socket) => {
-//   console.log("New client connected");
 
-//   socket.on("message", (data) => {
-//     console.log("Received message:", data);
-//     io.emit("message", data); // Broadcasting the message
-//   });
+router.get(`/users/:userId`, async (req, res) => {
+  try {
+    // Replace this with your method of getting the connected user's ID
+    const connectedUserId = req.params.userId;
 
-//   socket.on("disconnect", () => {
-//     console.log("Client disconnected");
-//   });
-// });
-router.get(`/`, async (req, res) => {
-  const userList = await User.find().select("-passwordHash");
-  //select("name phone email") to select specific fields
-  if (!userList) {
-    res.status(500).json({ success: false });
+    // Fetch users, excluding the connected user
+    const userList = await User.find({ _id: { $ne: connectedUserId } }).select(
+      "-passwordHash"
+    );
+
+    if (!userList) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch users." });
+    }
+
+    res.status(200).send(userList);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
-  res.send(userList);
 });
 
 router.get("/:id", async (req, res) => {
